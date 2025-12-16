@@ -27,11 +27,12 @@
         .nav-link {
             cursor: pointer;
             text-decoration: none;
+            text-wrap: none;
         }
         </style>
     </head>
     <body style="background-color: #000;
-                 color: royalblue;
+                 color: #00AAFF;
                  font-family: 'Courier New', Courier, monospace">
         <div class="position-relative">
             <img src="media/mac.jpg"
@@ -45,12 +46,14 @@
                         cursor: pointer"
                  onclick="console.log('Easter Egg!')"></div>
             <div class="position-absolute w-100 px-5 pt-4" style="top: 0; left: 0">
-                <div class="d-flex justify-content-between">
-                    <a href="/" class="nav-link">
+                <div id="nav" class="row justify-content-between">
+                    <a href="/" class="nav-link col-sm-8 no-wrap p-0">
                         <h1 class="mb-0">Bluesteel Software co</h1>
                     </a>
-                    <div id="nav" class="d-flex align-items-end gap-4">
+                    <div id="nav"
+                         class="d-flex justify-content-end align-items-end gap-4 col-sm-4 no-wrap p-0">
                         <a hx-get="/about.html" hx-target="#content" class="nav-link">About</a>
+                        <a hx-get="/contact.html" hx-target="#content" class="nav-link">Contact</a>
                     </div>
                 </div>
                 <div id="content" class="mt-2">

@@ -1,0 +1,28 @@
+<h4>Contact</h4>
+<form id="contact-form"
+      action="https://api.web3forms.com/submit"
+      method="POST">
+    <input type="hidden"
+           name="access_key"
+           value="5d252bdc-bf7a-4557-b871-e1c6742ac856">
+    <input type="hidden" name="from_name" value="Bluesteel">
+    <input type="hidden" name="subject" value="New Contact">
+    <input type="hidden" name="redirect" value="https://www.bluesteel.software">
+    <div class="row contact-form">
+        <div class="col-sm-4">
+            <label for="name">Your Name:</label>
+            <input type="text" name="name" required class="w-100">
+            <label for="email">Your Email:</label>
+            <input type="email" name="email" required class="w-100">
+            <label for="phone">Your Phone:</label>
+            <input type="tel" name="phone" class="w-100">
+        </div>
+        <div class="col-sm-8">
+            <label for="message">How can we help?</label>
+            <textarea name="message" required rows="6" class="w-100"></textarea>
+        </div>
+    </div>
+    <div class="d-flex justify-content-end mt-2">
+        <button type="submit" class="btn btn-secondary">Submit</button>
+    </div>
+</form>
