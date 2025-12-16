@@ -12,12 +12,12 @@ const fileSystem = {
         "",
         "I hope you know what you're doing!",
       ],
-      "schedule":[
+      schedule: [
         "> Tea with Lapsang - 8:30am",
         "> Relax at Daiye Spa - 10:00am",
         "> Pick up Matilda from the office - 6:30pm",
         "> Prepare for Show - 9:27pm",
-        "> Kick HanSolo's ass (Location: Members Only) - 9:30pm"
+        "> Kick HanSolo's ass (Location: Members Only) - 9:30pm",
       ],
       ".games/": {
         snake: [
@@ -400,15 +400,25 @@ const fileSystem = {
           }
         }
       },
-      ftp: function (args) {
+      ftp: async function (args) {
         printToTerminal("Connecting to Bluesteel FTP Server...\n");
-        setTimeout(() => {
+
+        const result = await fetch("https://download.bluesteel.software", {
+          method: "head",
+          cache: "no-store",
+        });
+
+        if (result.ok) {
           printToTerminal("Connected!\n");
           printToTerminal("Redirecting to downloads portal...\n");
           setTimeout(() => {
             window.open("https://download.bluesteel.software");
           }, 500);
-        }, 1234);
+        } else {
+          printToTerminal(
+            "Error: failed to connect to FTP server: server offline.\n",
+          );
+        }
       },
     },
   },
