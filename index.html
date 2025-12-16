@@ -29,6 +29,19 @@
             text-decoration: none;
             text-wrap: none;
         }
+
+        #screen-container {
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        #screen-container.flash {
+            background-color: white !important;
+        }
+
+        #screen-container.running {
+            background-image: radial-gradient(circle, #00AAFF44, #2B2B2B)!important;
+        }
+
         </style>
     </head>
     <body style="background-color: #000;
@@ -38,13 +51,14 @@
             <img src="media/mac.jpg"
                  alt="computer background"
                  class="img-fluid d-block w-100">
-            <div class="position-absolute rounded-circle"
+            <div id="mouse-button"
+                 class="position-absolute rounded-circle"
                  style="width: 9%;
                         height: 2%;
                         top: 79%;
                         left: 79%;
                         cursor: pointer"
-                 onclick="console.log('Easter Egg!')"></div>
+                 onclick="bootComputer()"></div>
             <div class="position-absolute w-100 px-5 pt-4" style="top: 0; left: 0">
                 <div id="nav" class="row justify-content-between">
                     <a href="/" class="nav-link col-sm-8 no-wrap p-0">
@@ -60,7 +74,31 @@
                     <h4>The files are in the computer.</h4>
                 </div>
             </div>
+            <div id="computer"
+                 class="position-absolute"
+                 style="width: 46%;
+                        height: 48%;
+                        top: 27%;
+                        left: 20%">
+                <div id="screen-container"
+                     class="position-absolute"
+                     style="width: 73%;
+                            height: 46%;
+                            top: 15%;
+                            left: 14%;
+                            border-radius: 10%"></div>
+            </div>
         </div>
+        <script>
+        function bootComputer() {
+            const screenContainer = document.getElementById('screen-container');
+            screenContainer.classList.add('flash', 'running');
+            setTimeout(() => screenContainer.classList.remove('flash'), 690);
+            setTimeout(() => runShell(), 2000)
+        }
+
+        </script>
+        <script src="runShell.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
                 integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
                 crossorigin="anonymous"></script>
