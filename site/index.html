@@ -100,11 +100,25 @@
             screenContainer.innerHTML = ""
             screenContainer.classList.add('flash', 'running');
             setTimeout(() => screenContainer.classList.remove('flash'), 690);
-            setTimeout(() => runShell(), 2000)
+            setTimeout(() => wasm.run_shell(), 1234)
         }
 
         </script>
-        <script src="runShell.js"></script>
+        <script type="module">
+            import init, { 
+                run_shell
+            } from './wasm/bluesteel.js';
+            
+            async function initWasm() {
+                await init();
+                console.log('This site has crabs...');
+                window.wasm = {
+                  run_shell
+                };
+            }
+            
+            initWasm();
+        </script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
                 integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
                 crossorigin="anonymous"></script>
