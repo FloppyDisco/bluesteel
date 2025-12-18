@@ -1,0 +1,15 @@
+{
+  "name": "bluesteel",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "bluesteel_bg.wasm",
+    "bluesteel.js",
+    "bluesteel.d.ts"
+  ],
+  "main": "bluesteel.js",
+  "types": "bluesteel.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
