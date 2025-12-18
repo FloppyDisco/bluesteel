@@ -41,7 +41,6 @@
         #screen-container.running {
             background-image: radial-gradient(circle, #00AAFF44, #2B2B2B)!important;
         }
-
         </style>
     </head>
     <body style="background-color: #000;
@@ -61,17 +60,68 @@
                  onclick="bootComputer()"></div>
             <div class="position-absolute w-100 px-5 pt-4" style="top: 0; left: 0">
                 <div id="nav" class="row justify-content-between">
-                    <a href="/" class="nav-link col-sm-8 no-wrap p-0">
-                        <h1 class="mb-0">Bluesteel Software co</h1>
-                    </a>
+                    <div class="col-sm-8 p-0">
+                    <button onclick="showSection('home')" class="nav-link">
+                        <h1 class="mb-0 no-wrap">Bluesteel Software co</h1>
+                    </button>
+                    </div>
                     <div id="nav"
                          class="d-flex justify-content-end align-items-end gap-4 col-sm-4 no-wrap p-0">
-                        <a hx-get="/about.html" hx-target="#content" class="nav-link">About</a>
-                        <a hx-get="/contact.html" hx-target="#content" class="nav-link">Contact</a>
+                        <button onclick="showSection('about')" class="nav-link">About</button>
+                        <button onclick="showSection('contact')" class="nav-link">Contact</button>
                     </div>
+                    <script>
+                    function showSection(id){
+                      document.getElementById('contact').style.display = 'none';
+                      document.getElementById('about').style.display = 'none';
+                      document.getElementById('home').style.display = 'none';
+                      document.getElementById(id).style.display = 'block';
+                    }
+                    </script>
                 </div>
                 <div id="content" class="mt-2">
-                    <h4>The files are in the computer.</h4>
+                    <div id="home">
+                        <h4>The files are in the computer.</h4>
+                    </div>
+                    <div id="about" style="display: none;">
+                        <h4>About</h4>
+                        <p>Bluesteel is the name, software is the game.</p>
+                        <p>
+                            We are a local software company right here in Bentonville, Arkansas.
+                            Our passion is building thoughtful tools to simplify your life.
+                            Whether you're an emerging business, a industry veteran, or just a person with an idea, if you bring us a problem, we'll help you create the solution.
+                        </p>
+                    </div>
+                    <div id="contact" style="display: none;">
+                        <h4>Contact</h4>
+                        <form id="contact-form"
+                              action="https://api.web3forms.com/submit"
+                              method="POST">
+                            <input type="hidden"
+                                   name="access_key"
+                                   value="5d252bdc-bf7a-4557-b871-e1c6742ac856">
+                            <input type="hidden" name="from_name" value="Bluesteel">
+                            <input type="hidden" name="subject" value="New Contact">
+                            <input type="hidden" name="redirect" value="https://bluesteel.software">
+                            <div class="row contact-form">
+                                <div class="col-sm-4">
+                                    <label for="name">Your Name:</label>
+                                    <input type="text" name="name" required class="w-100">
+                                    <label for="email">Your Email:</label>
+                                    <input type="email" name="email" required class="w-100">
+                                    <label for="phone">Your Phone:</label>
+                                    <input type="tel" name="phone" class="w-100">
+                                </div>
+                                <div class="col-sm-8">
+                                    <label for="message">How can we help?</label>
+                                    <textarea name="message" required rows="6" class="w-100"></textarea>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end mt-2">
+                                <button type="submit" class="btn btn-secondary">Submit</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
             <div id="computer"
