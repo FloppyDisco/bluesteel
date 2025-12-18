@@ -1,0 +1,12 @@
+# Set MIME types for WebAssembly files
+
+/wasm/*.wasm
+  Content-Type: application/wasm
+
+/wasm/*.js
+  Content-Type: application/javascript
+
+/wasm/*.d.ts
+  Content-Type: text/plain
+
+    
