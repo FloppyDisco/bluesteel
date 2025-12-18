@@ -425,14 +425,9 @@ const fileSystem = {
 };
 
 function runShell() {
-  const screenContainer = document.getElementById("screen-container");
+  CWD = "/home/";
 
-  // Clear screen and set up terminal
-  screenContainer.innerHTML = "";
-  screenContainer.style.color = "#00FF00";
-  screenContainer.style.fontSize = "12px";
-  screenContainer.style.padding = "10px";
-  screenContainer.style.overflow = "auto";
+  const screenContainer = document.getElementById("screen-container");
 
   // Create input area
   const terminalOutput = document.createElement("div");

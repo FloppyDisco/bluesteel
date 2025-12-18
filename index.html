@@ -86,12 +86,18 @@
                             height: 46%;
                             top: 15%;
                             left: 14%;
-                            border-radius: 10%"></div>
+                            border-radius: 10%;
+                            padding: 2%;
+                            color: #00FF00;
+                            overflow: auto;
+                            white-space: nowrap;"
+                ></div>
             </div>
         </div>
         <script>
         function bootComputer() {
             const screenContainer = document.getElementById('screen-container');
+            screenContainer.innerHTML = ""
             screenContainer.classList.add('flash', 'running');
             setTimeout(() => screenContainer.classList.remove('flash'), 690);
             setTimeout(() => runShell(), 2000)
