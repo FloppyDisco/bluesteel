@@ -1,2 +1,2 @@
-wasm-pack build --target web --out-dir site/wasm
-rm site/wasm/{.gitignore,README.md}
+wasm-pack build --target web --out-dir site/pkg
+rm site/pkg/{.gitignore,README.md}

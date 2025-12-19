@@ -448,6 +448,7 @@ function runShell() {
       const command = commandInput.value.trim();
       executeCommand(command);
       commandInput.value = "";
+      
       scrollToBottom();
     }
   });
