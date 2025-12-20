@@ -14,9 +14,22 @@ macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
+enum Command {
+    Pwd,
+    Ls,
+    Cd,
+    Cat,
+    Which,
+    Whoami,
+    Touch,
+    Mkdir,
+    Echo,
+    Rm,
+}
+
 enum Content {
     File(Vec<String>),
-    Executable(fn(Vec<&str>) -> Result<(), JsValue>),
+    Executable(Command),
     Directory(HashMap<String, Content>),
 }
 
@@ -48,6 +61,9 @@ impl Path {
     }
 
     fn combine(root: &Path, relative: &Path) -> Self {
+        // this naieve implementation does not allow for . and ..
+        // this method will need to parse each part of the relative path
+        // and manipulate the root for each segment
         Path::new(&format!("{}/{}", root.path, relative.path))
     }
 
@@ -146,7 +162,7 @@ impl Shell {
         // console_log!("{}", content);
 
         let executable = match content {
-            Content::Executable(function) => function,
+            Content::Executable(command) => command,
             Content::File(_) => {
                 self.print_output(format!("sh: {}: file is not executable", command))?;
                 return Ok(());
@@ -157,8 +173,10 @@ impl Shell {
             }
         };
 
-        executable(args)?;
-
+        match executable {
+            Command::Ls => self.ls(args)?,
+            _ => {}
+        }
         Ok(())
     }
 
@@ -200,33 +218,53 @@ impl Shell {
         self.output.append_child(&div)?;
         Ok(())
     }
+
+    fn ls(&self, args: Vec<&str>) -> Result<(), JsValue> {
+        let mut display_hidden: bool = false;
+        let mut display_subdirectories: bool = false;
+        let mut content_to_print: Vec<&Content> = Vec::new();
+
+        for arg in args {
+            match arg {
+                "-a" => display_hidden = true,
+                "-R" => display_subdirectories = true,
+                "-aR" | "-Ra" => {
+                    display_hidden = true;
+                    display_subdirectories = true;
+                }
+                _ => {
+                    let path = if arg.starts_with("/") {
+                        Path::new(&arg)
+                    } else {
+                        Path::combine(&self.filesystem.cwd, &Path::new(&arg))
+                    };
+
+                    if let Some(content) = self.filesystem.get_content(&path) {
+                        content_to_print.push(content);
+                    } else {
+                        self.print_output(format!("ls: {}: no such file or directory", arg))?;
+                    };
+                }
+            }
+        }
+        
+        for content in content_to_print {
+            match content {
+                Content::File(_) | Content::Executable(_) => {},
+                Content::Directory(dir) => {
+                    // print all the contents of this directory
+                },
+            }
+        }
+        Ok(())
+    }
 }
 
 #[wasm_bindgen]
 pub fn boot_shell() -> Result<Shell, JsValue> {
-    fn snake(_args: Vec<&str>) -> Result<(), JsValue> {
-        Ok(())
-    }
-
-    fn ls(_args: Vec<&str>) -> Result<(), JsValue> {
-        Ok(())
-        // accepts:
-        // a path
-        // the -a flag
-        // the -r flag
-
-        // convert all paths to an absolute path
-        // traverse the file_system to find the requested path
-        // if the file does not exist print an error
-
-        // print the contents of the directory
-        // -a to print hidden files as well
-        // -r to print the contents of any nested directories as well
-    }
-
     let bin = Content::Directory(HashMap::from([(
         String::from("ls"),
-        Content::Executable(ls),
+        Content::Executable(Command::Ls),
     )]));
 
     let local_home = Content::Directory(HashMap::from([
@@ -250,12 +288,16 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
                 ),
             ]),
         ),
+        // (
+        //     String::from(".games"),
+        //     Content::Directory(HashMap::from([(
+        //         String::from("snake"),
+        //         Content::Executable(Command::Snake),
+        //     )])),
+        // ),
         (
-            String::from(".games"),
-            Content::Directory(HashMap::from([(
-                String::from("snake"),
-                Content::Executable(snake),
-            )])),
+            String::from("downloads"),
+            Content::Directory(HashMap::from([])),
         ),
     ]));
 
