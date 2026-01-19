@@ -266,6 +266,12 @@
                 onclick="bootComputer()"
             ></div>
             <script>
+                document.addEventListener("keydown", (event) => {
+                    if (event.key === "Escape" && event.metaKey) {
+                        bootComputer();
+                    }
+                });
+
                 function bootComputer() {
                     // flash the screen of the computer
                     const screenContainer =
