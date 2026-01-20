@@ -1,4 +1,4 @@
-use std::cell::{RefCell};
+use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -17,50 +17,16 @@ macro_rules! console_log {
 }
 
 enum Command {
-    Pwd,
     Ls,
     Cd,
-    Cat,
-    Which,
-    Whoami,
-    Touch,
-    Mkdir,
-    Echo,
-    Rm,
-}
-
-struct Path {
-    path: String,
-}
-
-impl Path {
-    fn new(path_str: &str) -> Self {
-        let mut path = path_str.to_string();
-        if path.chars().next() == Some('/') {
-            path.remove(0);
-        };
-        if path.chars().next_back() == Some('/') {
-            path.pop();
-        };
-        Path { path }
-    }
-
-    fn combine(root: &Path, relative: &Path) -> Self {
-        // this naieve implementation does not allow for . and ..
-        // this method will need to parse each part of the relative path
-        // and manipulate the root for each segment
-        Path::new(&format!("{}/{}", root.path, relative.path))
-    }
-
-    fn get_segments(&self) -> Vec<&str> {
-        self.path.split("/").collect()
-    }
-}
-
-impl fmt::Display for Path {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "/{}/", self.path)
-    }
+    // Pwd,
+    // Cat,
+    // Which,
+    // Whoami,
+    // Touch,
+    // Mkdir,
+    // Echo,
+    // Rm,
 }
 
 enum FileType {
@@ -68,6 +34,8 @@ enum FileType {
     Executable(Command),
     Directory(Vec<Rc<RefCell<FileNode>>>),
 }
+
+use FileType::*;
 
 struct FileNode {
     name: String,
@@ -89,7 +57,7 @@ impl FileNode {
 
         let node_ref = Rc::new(RefCell::new(node));
 
-        if let FileType::Directory(children) = &node_ref.borrow().file_type {
+        if let Directory(children) = &node_ref.borrow().file_type {
             for child in children {
                 child.borrow_mut().parent = Some(node_ref.clone());
             }
@@ -98,31 +66,36 @@ impl FileNode {
         node_ref
     }
 
-    fn get_path(&self) -> Path {
+    fn get_path(&self) -> String {
         let mut segments: Vec<String> = Vec::new();
-        
+
         let name = self.name.clone();
         segments.push(name);
-        
+
         let mut ancestor = self.parent.clone();
         while let Some(node_ref) = ancestor {
             let node = node_ref.borrow();
             let segment = node.name.clone();
             segments.push(segment);
+
             ancestor = node.parent.clone()
         }
 
-        segments.reverse();
-        Path::new(&segments.join("/"))
+        if segments.len() == 1 && segments[0] == "" {
+            "/".to_string()
+        } else {
+            segments.reverse();
+            segments.join("/")
+        }
     }
 }
 
 impl fmt::Display for FileNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let name = match self.file_type {
-            FileType::File(_) => "File",
-            FileType::Executable(_) => "Executable",
-            FileType::Directory(_) => "Directory",
+            File(_) => "File",
+            Executable(_) => "Executable",
+            Directory(_) => "Directory",
         };
         write!(f, "{}", name)
     }
@@ -130,49 +103,52 @@ impl fmt::Display for FileNode {
 
 struct FileSystem {
     root: Rc<RefCell<FileNode>>,
+    home: Rc<RefCell<FileNode>>,
     cwd: Rc<RefCell<FileNode>>,
+    previous: Rc<RefCell<FileNode>>,
 }
 
 impl FileSystem {
-    // fn get_content(&self, path: &Path) -> Option<&FileNodeType> {
-    //     let mut content = &self.contents;
-    //     for segment in path.segments() {
-    //         // console_log!("segment: {}", segment);
-    //         // console_log!("content: {}", content);
-    //         // this method needs to handle the "" string segment because i think it will come up alot in edge cases
-    //         content = match content {
-    //             FileNodeType::Directory(dir) => dir.get(segment)?,
-    //             _ => return None,
-    //         };
-    //     }
-    //     Some(content)
-    // }
-    fn get_node_ref(&self, path: &Path) -> Option<Rc<RefCell<FileNode>>> {
-        let mut node_ref = self.root.clone();
-        let segments = path.get_segments();
+    fn get_node_ref(&self, path: &str) -> Option<Rc<RefCell<FileNode>>> {
+        if path == "" {
+            return Some(self.cwd.clone());
+        };
+        if path == "/" {
+            return Some(self.root.clone());
+        };
 
-        for segment in segments {
-            if segment.is_empty() {
-                continue;
-            }
+        let mut current: Rc<RefCell<FileNode>> = if path.chars().nth(0) == Some('/') {
+            self.root.clone()
+        } else {
+            self.cwd.clone()
+        };
 
-            let clone = node_ref.clone();
-            let FileType::Directory(children) = &clone.borrow().file_type else {
-                return None;
+        for segment in path.split("/") {
+            current = match segment {
+                "" | "." => current,
+                ".." => current
+                    .borrow()
+                    .parent
+                    .clone()
+                    .unwrap_or_else(|| current.clone()),
+                _ => {
+                    let Directory(child_nodes) = &current.borrow().file_type else {
+                        return None;
+                    };
+
+                    let Some(child) = child_nodes
+                        .iter()
+                        .find(|child| child.borrow().name == segment)
+                    else {
+                        return None;
+                    };
+
+                    child.clone()
+                }
             };
-
-            if let Some(child_ref) = children
-                .iter()
-                .find(|node_ref| node_ref.borrow().name == segment)
-            {
-                node_ref = child_ref.clone();
-            } else {
-                return None;
-            }
         }
 
-        let node = node_ref.clone();
-        Some(node)
+        return Some(current.clone());
     }
 }
 
@@ -189,7 +165,7 @@ pub struct Shell {
 
 #[wasm_bindgen]
 impl Shell {
-    pub fn execute(&self, input: &str) -> Result<(), JsValue> {
+    pub fn execute(&mut self, input: &str) -> Result<(), JsValue> {
         self.print_command(input)?;
 
         // because input is gauranteed to be at least an empty string
@@ -200,53 +176,37 @@ impl Shell {
         if command == "" {
             return Ok(());
         }
-        console_log!("input; {}", input);
-        console_log!("command: {}", command);
 
-        let node_ref = if command.starts_with('/') {
-            let command_path = Path::new(command);
+        let node_ref = match self.filesystem.get_node_ref(&command) {
+            Some(node_ref) => node_ref,
+            None => {
+                // command not found in the current directory
+                // if the command is not a absolute path ('/starts/with/slash')
+                // check for the command in the /bin/
+                let bin_node = if command.chars().nth(0) != Some('/') {
+                    self.filesystem
+                        .get_node_ref(&("/bin/".to_string() + command))
+                } else {
+                    None
+                };
 
-            let Some(node_ref) = self.filesystem.get_node_ref(&command_path) else {
-                self.print_output(format!("sh: {}: command not found", command))?;
-                return Ok(());
-            };
-
-            node_ref
-        } else {
-            let relative_path = Path::new(command);
-            let command_path =
-                Path::combine(&self.filesystem.cwd.borrow().get_path(), &relative_path);
-
-            console_log!("{}", command_path);
-
-            let node_ref = match self.filesystem.get_node_ref(&command_path) {
-                Some(node_ref) => node_ref,
-                None => {
-                    let bin_path = Path::combine(&Path::new("/bin/"), &relative_path);
-                    console_log!("{}", bin_path);
-                    match self.filesystem.get_node_ref(&bin_path) {
-                        Some(node_ref) => node_ref,
-                        None => {
-                            self.print_output(format!("sh: {}: command not found", command))?;
-                            return Ok(());
-                        }
-                    }
+                if let Some(node_ref) = bin_node {
+                    node_ref
+                } else {
+                    self.print_output(format!("sh: {}: command not found", command))?;
+                    return Ok(());
                 }
-            };
-
-            node_ref
+            }
         };
-
-        console_log!("node: {}", node_ref.borrow());
 
         let content = &node_ref.borrow().file_type;
         let executable = match content {
-            FileType::Executable(command) => command,
-            FileType::File(_) => {
+            Executable(command) => command,
+            File(_) => {
                 self.print_output(format!("sh: {}: file is not executable", command))?;
                 return Ok(());
             }
-            FileType::Directory(_) => {
+            Directory(_) => {
                 self.print_output(format!("sh: {}: directory is not executable", command))?;
                 return Ok(());
             }
@@ -254,24 +214,9 @@ impl Shell {
 
         match executable {
             Command::Ls => self.ls(args)?,
-            _ => {}
+            Command::Cd => self.cd(args)?,
         }
         Ok(())
-    }
-
-    // fn set_cwd(&mut self, path: Path) {
-    //     // check that content at the path is a directory
-    //     self.filesystem.cwd = Path::new("/bin/")
-    // }
-
-    fn generate_path(&self, path: &str) -> Path {
-        Path::new(path)
-    }
-
-    fn get_cwd(&self) -> Result<Rc<RefCell<FileNode>>, JsValue> {
-        self.filesystem
-            .get_node_ref(&self.filesystem.cwd.borrow().get_path())
-            .ok_or(JsValue::from("could not retrieve cwd"))
     }
 
     fn update_prompt(&self, prompt: &str) {
@@ -302,12 +247,45 @@ impl Shell {
         Ok(())
     }
 
-    // // example cd ..
-    // pub fn cd_up(&mut self) {
-    //     if let Some(parent) = self.cwd.borrow().parent.clone() {
-    //         self.cwd = parent;
-    //     }
-    // }
+    fn cd(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
+        let cwd = self.filesystem.cwd.clone();
+
+        if args.is_empty() {
+            self.filesystem.cwd = self.filesystem.home.clone();
+        } else {
+            if args.len() > 1 {
+                self.print_output(format!("cd: '{}': invalid argument", args.join(" ")));
+                return Ok(());
+            };
+
+            // we need to set the cwd to the new node
+
+            if let Some(path) = args.get(0) {
+                if path == &"-" {
+                    self.filesystem.cwd = self.filesystem.previous.clone();
+                } else {
+                    if let Some(node_ref) = self.filesystem.get_node_ref(path) {
+                        match &node_ref.borrow().file_type {
+                            Directory(_) => {
+                                self.filesystem.cwd = node_ref.clone();
+                            }
+                            _ => {
+                                self.print_output(format!("cd: {}: not a directory", path));
+                                return Ok(());
+                            }
+                        }
+                    } else {
+                        self.print_output(format!("cd: {}: directory not found", path));
+                        return Ok(());
+                    }
+                }
+            }
+        };
+
+        self.filesystem.previous = cwd;
+        self.update_prompt(&format!("{}", self.filesystem.cwd.borrow().get_path()));
+        Ok(())
+    }
 
     fn ls(&self, args: Vec<&str>) -> Result<(), JsValue> {
         console_log!("executing: ls");
@@ -411,11 +389,10 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
     let bin = FileNode::new(
         "bin",
         None,
-        FileType::Directory(vec![FileNode::new(
-            "ls",
-            None,
-            FileType::Executable(Command::Ls)
-        )])
+        FileType::Directory(vec![
+            FileNode::new("ls", None, FileType::Executable(Command::Ls)),
+            FileNode::new("cd", None, FileType::Executable(Command::Cd)),
+        ]),
     );
     let home = FileNode::new(
         "home",
@@ -423,12 +400,14 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
         FileType::Directory(vec![FileNode::new(
             "user",
             None,
-            FileType::Directory(vec![]),
+            FileType::Directory(vec![FileNode::new(".test", None, FileType::File(vec![]))]),
         )]),
     );
     let local = FileSystem {
         cwd: home.clone(),
-        root: FileNode::new("", None, FileType::Directory(vec![home, bin    ])),
+        home: home.clone(),
+        previous: home.clone(),
+        root: FileNode::new("", None, FileType::Directory(vec![home, bin])),
     };
 
     let window = web_sys::window().ok_or("window not found")?;
