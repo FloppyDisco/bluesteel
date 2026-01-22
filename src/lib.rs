@@ -1,9 +1,11 @@
 use std::cell::RefCell;
 use std::collections::VecDeque;
-use std::fmt;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, Element};
+
+mod filesystem;
+use filesystem::{Command, FileNode, FileSystem, FileType};
 
 // Import the `console.log` function from the browser
 #[wasm_bindgen]
@@ -17,141 +19,7 @@ macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
-enum Command {
-    Ls,
-    Cd,
-    // Pwd,
-    // Cat,
-    // Which,
-    // Whoami,
-    // Touch,
-    // Mkdir,
-    // Echo,
-    // Rm,
-}
-
-enum FileType {
-    File(Vec<String>),
-    Executable(Command),
-    Directory(Vec<Rc<RefCell<FileNode>>>),
-}
-
 use FileType::*;
-
-struct FileNode {
-    name: String,
-    parent: Option<Rc<RefCell<FileNode>>>,
-    file_type: FileType,
-}
-
-impl FileNode {
-    fn new(
-        name: &str,
-        parent: Option<Rc<RefCell<FileNode>>>,
-        file_type: FileType,
-    ) -> Rc<RefCell<FileNode>> {
-        let node = FileNode {
-            name: name.to_string(),
-            parent,
-            file_type,
-        };
-
-        let node_ref = Rc::new(RefCell::new(node));
-
-        if let Directory(children) = &node_ref.borrow().file_type {
-            for child in children {
-                child.borrow_mut().parent = Some(node_ref.clone());
-            }
-        };
-
-        node_ref
-    }
-
-    fn get_path(&self) -> String {
-        let mut segments: Vec<String> = Vec::new();
-
-        let name = self.name.clone();
-        segments.push(name);
-
-        let mut ancestor = self.parent.clone();
-        while let Some(node_ref) = ancestor {
-            let node = node_ref.borrow();
-            let segment = node.name.clone();
-            segments.push(segment);
-
-            ancestor = node.parent.clone()
-        }
-
-        if segments.len() == 1 && segments[0] == "" {
-            "/".to_string()
-        } else {
-            segments.reverse();
-            segments.join("/")
-        }
-    }
-}
-
-impl fmt::Display for FileNode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let name = match self.file_type {
-            File(_) => "File",
-            Executable(_) => "Executable",
-            Directory(_) => "Directory",
-        };
-        write!(f, "{}", name)
-    }
-}
-
-struct FileSystem {
-    root: Rc<RefCell<FileNode>>,
-    home: Rc<RefCell<FileNode>>,
-    cwd: Rc<RefCell<FileNode>>,
-    previous: Rc<RefCell<FileNode>>,
-}
-
-impl FileSystem {
-    fn get_node_ref(&self, path: &str) -> Option<Rc<RefCell<FileNode>>> {
-        if path == "" {
-            return Some(self.cwd.clone());
-        };
-        if path == "/" {
-            return Some(self.root.clone());
-        };
-
-        let mut current: Rc<RefCell<FileNode>> = if path.chars().nth(0) == Some('/') {
-            self.root.clone()
-        } else {
-            self.cwd.clone()
-        };
-
-        for segment in path.split("/") {
-            current = match segment {
-                "" | "." => current,
-                ".." => current
-                    .borrow()
-                    .parent
-                    .clone()
-                    .unwrap_or_else(|| current.clone()),
-                _ => {
-                    let Directory(child_nodes) = &current.borrow().file_type else {
-                        return None;
-                    };
-
-                    let Some(child) = child_nodes
-                        .iter()
-                        .find(|child| child.borrow().name == segment)
-                    else {
-                        return None;
-                    };
-
-                    child.clone()
-                }
-            };
-        }
-
-        return Some(current.clone());
-    }
-}
 
 #[wasm_bindgen]
 pub struct Shell {
