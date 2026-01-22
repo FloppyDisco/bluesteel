@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
+use wasm_bindgen::JsValue;
 
 #[derive(Clone)]
 pub enum Command {
@@ -10,7 +11,7 @@ pub enum Command {
     Whoami,
     Which,
     Cat,
-    // Touch,
+    Touch,
     // Mkdir,
     // Echo,
     // Rm,
@@ -147,16 +148,16 @@ impl FileSystem {
 
     pub(crate) fn get_node_ref(&self, path: &str) -> Option<Rc<RefCell<FileNode>>> {
         if path == "" {
-            return Some(self.cwd.clone());
+            return Some(self.cwd());
         };
         if path == "/" {
-            return Some(self.root.clone());
+            return Some(self.root());
         };
 
         let mut current: Rc<RefCell<FileNode>> = if path.chars().nth(0) == Some('/') {
-            self.root.clone()
+            self.root()
         } else {
-            self.cwd.clone()
+            self.cwd()
         };
 
         for segment in path.split("/") {
@@ -185,5 +186,29 @@ impl FileSystem {
         }
 
         Some(current.clone())
+    }
+
+    pub(crate) fn add_node(
+        &mut self,
+        parent_ref: Rc<RefCell<FileNode>>,
+        node_ref: Rc<RefCell<FileNode>>,
+    ) -> Result<(), JsValue> {
+        let mut parent = parent_ref.borrow_mut();
+        match &mut parent.file_type {
+            FileType::Directory(child_nodes) => {
+                if child_nodes
+                    .iter()
+                    .any(|child| child.borrow().name == node_ref.borrow().name)
+                {
+                    Err(JsValue::from_str("Node already exists"))
+                } else {
+                    child_nodes.push(node_ref);
+                    Ok(())
+                }
+            }
+            FileType::File(_) | FileType::Executable(_) => {
+                Err(JsValue::from_str("Cannot add node to a file or executable"))
+            }
+        }
     }
 }

@@ -49,6 +49,8 @@ impl Shell {
 impl Shell {
     pub fn execute(&mut self, input: &str) -> Result<(), JsValue> {
         self.print_command(input)?;
+        
+
 
         // because input is gauranteed to be at least an empty string
         // calling .split().remove(0) cannot fail because there will always be atleast one item
@@ -87,6 +89,7 @@ impl Shell {
             Command::Whoami => self.whoami(args)?,
             Command::Which => self.which(args)?,
             Command::Cat => self.cat(args)?,
+            Command::Touch => self.touch(args)?,
         }
         Ok(())
     }
@@ -297,6 +300,39 @@ impl Shell {
                 }
             } else {
                 self.print_output(format!("cat: {}: no such file or directory", arg))?;
+            };
+        }
+
+        Ok(())
+    }
+
+    fn touch(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
+        for arg in args {
+            let mut path_components: Vec<&str> = arg.split('/').collect();
+            let filename = path_components.pop().unwrap();
+
+            if let Some(node_ref) = self.filesystem.get_node_ref(&path_components.join("/")) {
+                let node = node_ref.borrow();
+                match &node.file_type {
+                    Directory(children) => {
+                        if !children.iter().any(|child| child.borrow().name == filename) {
+                            let new_file = FileNode::new(filename, Some(node_ref.clone()), File(vec![]));
+                            // we must manually drop the borrow() of node_ref
+                            // so that we do not have a mut borrow (inside add_node) 
+                            // and a immutable borrow at the same time
+                            drop(node);
+                            self.filesystem.add_node(node_ref.clone(), new_file)?;
+                        }
+                    }
+                    File(_) | Executable(_) => {
+                        self.print_output(format!(
+                            "touch: {}: is not a directory",
+                            node.get_path()
+                        ))?;
+                    }
+                };
+            } else {
+                self.print_output(format!("touch: {}: no such file or directory", path_components.join("/")))?;
             };
         }
 

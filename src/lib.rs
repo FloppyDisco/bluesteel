@@ -20,6 +20,7 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
             FileNode::new("whoami", None, FileType::Executable(Command::Whoami)),
             FileNode::new("which", None, FileType::Executable(Command::Which)),
             FileNode::new("cat", None, FileType::Executable(Command::Cat)),
+            FileNode::new("touch", None, FileType::Executable(Command::Touch)),
         ]),
     );
     let home = FileNode::new(
