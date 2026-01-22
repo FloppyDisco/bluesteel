@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::fmt;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -225,6 +226,7 @@ impl Shell {
 
     fn print_output(&self, text: String) -> Result<(), JsValue> {
         let div = self.document.create_element("div")?;
+        div.set_attribute("style", "min-height: 1em;")?;
         div.set_text_content(Some(text.as_str()));
         self.output.append_child(&div)?;
         Ok(())
@@ -258,8 +260,6 @@ impl Shell {
                 return Ok(());
             };
 
-            // we need to set the cwd to the new node
-
             if let Some(path) = args.get(0) {
                 if path == &"-" {
                     self.filesystem.cwd = self.filesystem.previous.clone();
@@ -289,30 +289,23 @@ impl Shell {
 
     fn ls(&self, args: Vec<&str>) -> Result<(), JsValue> {
         console_log!("executing: ls");
-        
+
         let mut display_hidden: bool = false;
         let mut display_subdirectories: bool = false;
+        let mut received_path_arg: bool = false;
         let mut nodes_to_print: Vec<Rc<RefCell<FileNode>>> = Vec::new();
-        
-        if args.is_empty() {
-            nodes_to_print.push(self.filesystem.cwd.clone());
-        }
+
         for arg in args {
             match arg {
-                "-a" => display_hidden = true,
-                "-R" => display_subdirectories = true,
+                "-a" | "--all" => display_hidden = true,
+                "-R" | "--recurse" => display_subdirectories = true,
                 "-aR" | "-Ra" => {
                     display_hidden = true;
                     display_subdirectories = true;
                 }
                 _ => {
-                    let path = if arg.starts_with("/") {
-                        Path::new(&arg)
-                    } else {
-                        Path::combine(&self.filesystem.cwd.borrow().get_path(), &Path::new(&arg))
-                    };
-
-                    if let Some(node_ref) = self.filesystem.get_node_ref(&path) {
+                    received_path_arg = true;
+                    if let Some(node_ref) = self.filesystem.get_node_ref(&arg) {
                         nodes_to_print.push(node_ref);
                     } else {
                         self.print_output(format!("ls: {}: no such file or directory", arg))?;
@@ -321,14 +314,66 @@ impl Shell {
             }
         }
 
+        // allow passing 'ls' or 'ls -aR'
+        // there are args but no path provided
+        if nodes_to_print.is_empty() && !received_path_arg {
+            nodes_to_print.push(self.filesystem.cwd.clone());
+        }
+
+        let display_headers = &nodes_to_print.len() > &1usize;
+
         for node_ref in nodes_to_print {
+            if display_headers {
+                self.print_output(format!("{}/:", node_ref.borrow().name))?;
+            }
             match &node_ref.borrow().file_type {
                 FileType::File(_) | FileType::Executable(_) => {
-                    self.print_output(format!("{}",node_ref.borrow().name))?;
+                    self.print_output(format!("  {}", node_ref.borrow().name))?;
                 }
                 FileType::Directory(children) => {
                     for child_ref in children {
-                        self.print_output(format!("{}", child_ref.borrow().name.clone()))?;
+                        if display_hidden || !child_ref.borrow().name.starts_with('.') {
+                            self.print_output(format!("  {}", child_ref.borrow().name.clone()))?;
+                        }
+                    }
+
+                    if display_subdirectories {
+                        let mut stack: VecDeque<Rc<RefCell<FileNode>>> = children
+                            .iter()
+                            .filter(|child_ref| {
+                                matches!(child_ref.borrow().file_type, Directory(_))
+                            })
+                            .cloned()
+                            .collect();
+
+                        while let Some(node_ref) = stack.pop_front() {
+                            let node = node_ref.borrow();
+                            self.print_output(format!("  {}/:", &node.get_path()));
+
+                            if display_hidden || !node.name.starts_with('.') {
+                                match &node.file_type {
+                                    File(_) | Executable(_) => {
+                                        self.print_output(format!("  {}", &node.name));
+                                    }
+                                    Directory(children) => {
+                                        for child_ref in children {
+                                            if display_hidden
+                                                || !child_ref.borrow().name.starts_with('.')
+                                            {
+                                                self.print_output(format!(
+                                                    "{}",
+                                                    child_ref.borrow().name
+                                                ));
+                                            }
+
+                                            if let Directory(_) = child_ref.borrow().file_type {
+                                                stack.push_back(child_ref.clone());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -397,11 +442,15 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
     let home = FileNode::new(
         "home",
         None,
-        FileType::Directory(vec![FileNode::new(
-            "user",
-            None,
-            FileType::Directory(vec![FileNode::new(".test", None, FileType::File(vec![]))]),
-        )]),
+        FileType::Directory(vec![
+            FileNode::new(".hidden", None, File(Vec::new())),
+            FileNode::new("not_hidden", None, File(Vec::new())),
+            FileNode::new(
+                "user",
+                None,
+                FileType::Directory(vec![FileNode::new(".test", None, FileType::File(vec![]))]),
+            ),
+        ]),
     );
     let local = FileSystem {
         cwd: home.clone(),
