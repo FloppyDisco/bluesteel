@@ -59,25 +59,11 @@ impl Shell {
             return Ok(());
         }
 
-        let node_ref = match self.filesystem.get_node_ref(&command) {
+        let node_ref = match self.filesystem.get_command(&command) {
             Some(node_ref) => node_ref,
             None => {
-                // command not found in the current directory
-                // if the command is not a absolute path ('/starts/with/slash')
-                // check for the command in the /bin/
-                let bin_node = if command.chars().nth(0) != Some('/') {
-                    self.filesystem
-                        .get_node_ref(&("/bin/".to_string() + command))
-                } else {
-                    None
-                };
-
-                if let Some(node_ref) = bin_node {
-                    node_ref
-                } else {
-                    self.print_output(format!("sh: {}: command not found", command))?;
-                    return Ok(());
-                }
+                self.print_output(format!("sh: {}: command not found", command))?;
+                return Ok(());
             }
         };
 
@@ -153,13 +139,11 @@ impl Shell {
     }
 
     fn which(&self, args: Vec<&str>) -> Result<(), JsValue> {
-        // for each arg
-        // find the location of a command in the file system
-        // relative path
-        // either in the current directory or in /bin
-        // absolute path
-        // only at the given path
-        // this logic will probably need to be abstracted from the argument parsing
+        for arg in args {
+            if let Some(node_ref) = self.filesystem.get_command(arg) {
+                self.print_output(node_ref.borrow().get_path())?;
+            }
+        }
 
         Ok(())
     }

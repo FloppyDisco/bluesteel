@@ -30,7 +30,10 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
             FileNode::new(
                 "user",
                 None,
-                FileType::Directory(vec![FileNode::new(".test", None, FileType::File(vec![]))]),
+                FileType::Directory(vec![
+                    FileNode::new(".test", None, FileType::File(vec![])),
+                    FileNode::new("whoami2", None, FileType::Executable(Command::Whoami)),
+                ]),
             ),
         ]),
     );

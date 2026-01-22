@@ -133,6 +133,18 @@ impl FileSystem {
         self.previous = previous;
     }
 
+    pub(crate) fn get_command(&self, command: &str) -> Option<Rc<RefCell<FileNode>>> {
+        if let Some(node_ref) = self.get_node_ref(command) {
+            return Some(node_ref);
+        }
+
+        if command.chars().nth(0) != Some('/') {
+            return self.get_node_ref(&("/bin/".to_string() + command));
+        }
+
+        None
+    }
+
     pub(crate) fn get_node_ref(&self, path: &str) -> Option<Rc<RefCell<FileNode>>> {
         if path == "" {
             return Some(self.cwd.clone());
