@@ -8,6 +8,19 @@ use web_sys::{Document, Element};
 use crate::filesystem::{Command, FileNode, FileSystem, FileType};
 use FileType::*;
 
+// // Import the `console.log` function from the browser
+// #[wasm_bindgen]
+// extern "C" {
+//     #[wasm_bindgen(js_namespace = console)]
+//     fn log(s: &str);
+// }
+
+// // Define a macro to make console.log easier to use
+// macro_rules! console_log {
+//     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+// }
+
+
 #[wasm_bindgen]
 pub struct Shell {
     filesystem: FileSystem,
