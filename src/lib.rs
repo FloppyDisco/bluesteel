@@ -62,8 +62,6 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
         .get_element_by_id("command-line")
         .ok_or("command-line could not found")?;
 
-    let cwd_path = local.cwd().borrow().get_path();
-
     let shell = Shell::new(
         local,
         document.clone(),
@@ -73,8 +71,6 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
         prompt_directory.clone(),
         command_line.clone(),
     );
-
-    shell.update_prompt(&cwd_path);
 
     return Ok(shell);
 }

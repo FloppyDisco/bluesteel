@@ -5,7 +5,6 @@ export class Shell {
   private constructor();
   free(): void;
   [Symbol.dispose](): void;
-  update_prompt(prompt: string): void;
   execute(input: string): void;
 }
 
@@ -17,7 +16,6 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_shell_free: (a: number, b: number) => void;
   readonly shell_execute: (a: number, b: number, c: number) => [number, number];
-  readonly shell_update_prompt: (a: number, b: number, c: number) => void;
   readonly boot_shell: () => [number, number, number];
   readonly __wbindgen_exn_store: (a: number) => void;
   readonly __externref_table_alloc: () => number;

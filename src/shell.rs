@@ -29,7 +29,7 @@ impl Shell {
         prompt_directory: Element,
         command_line: Element,
     ) -> Self {
-        Self {
+        let shell = Self {
             filesystem,
             document,
             output,
@@ -37,7 +37,11 @@ impl Shell {
             prompt,
             prompt_directory,
             command_line,
-        }
+        };
+
+        shell.update_prompt(&shell.filesystem.cwd().borrow().get_path());
+
+        shell
     }
 }
 
@@ -100,7 +104,7 @@ impl Shell {
         Ok(())
     }
 
-    pub fn update_prompt(&self, prompt: &str) {
+    fn update_prompt(&self, prompt: &str) {
         self.prompt_directory.set_text_content(Some(prompt));
     }
 
@@ -147,7 +151,7 @@ impl Shell {
         self.print_output("zoolander99".to_string())?;
         Ok(())
     }
-    
+
     fn which(&self, args: Vec<&str>) -> Result<(), JsValue> {
         // for each arg
         // find the location of a command in the file system
@@ -156,10 +160,10 @@ impl Shell {
         // absolute path
         // only at the given path
         // this logic will probably need to be abstracted from the argument parsing
-        
+
         Ok(())
     }
-    
+
     fn cd(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
         let cwd = self.filesystem.cwd();
 

@@ -127,14 +127,6 @@ export class Shell {
         wasm.__wbg_shell_free(ptr, 0);
     }
     /**
-     * @param {string} prompt
-     */
-    update_prompt(prompt) {
-        const ptr0 = passStringToWasm0(prompt, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.shell_update_prompt(this.__wbg_ptr, ptr0, len0);
-    }
-    /**
      * @param {string} input
      */
     execute(input) {
