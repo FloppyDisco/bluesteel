@@ -12,7 +12,7 @@ pub enum Command {
     Which,
     Cat,
     Touch,
-    // Mkdir,
+    Mkdir,
     // Echo,
     // Rm,
 }

@@ -103,6 +103,7 @@ impl Shell {
             Command::Which => self.which(args)?,
             Command::Cat => self.cat(args)?,
             Command::Touch => self.touch(args)?,
+            Command::Mkdir => self.mkdir(args)?,
         }
         Ok(())
     }
@@ -346,6 +347,39 @@ impl Shell {
                 };
             } else {
                 self.print_output(format!("touch: {}: no such file or directory", path_components.join("/")))?;
+            };
+        }
+
+        Ok(())
+    }
+    
+    fn mkdir(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
+        for arg in args {
+            let mut path_components: Vec<&str> = arg.split('/').collect();
+            let dirname = path_components.pop().unwrap();
+
+            if let Some(node_ref) = self.filesystem.get_node_ref(&path_components.join("/")) {
+                let node = node_ref.borrow();
+                match &node.file_type {
+                    Directory(children) => {
+                        if !children.iter().any(|child| child.borrow().name == dirname) {
+                            let new_dir = FileNode::new(dirname, Some(node_ref.clone()), Directory(vec![]));
+                            // we must manually drop the borrow() of node_ref
+                            // so that we do not have a mut borrow (inside add_node) 
+                            // and a immutable borrow at the same time
+                            drop(node);
+                            self.filesystem.add_node(node_ref.clone(), new_dir)?;
+                        }
+                    }
+                    File(_) | Executable(_) => {
+                        self.print_output(format!(
+                            "mkdir: {}: is not a directory",
+                            node.get_path()
+                        ))?;
+                    }
+                };
+            } else {
+                self.print_output(format!("mkdir: {}: no such file or directory", path_components.join("/")))?;
             };
         }
 
