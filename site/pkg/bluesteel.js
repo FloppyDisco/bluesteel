@@ -127,6 +127,14 @@ export class Shell {
         wasm.__wbg_shell_free(ptr, 0);
     }
     /**
+     * @param {string} prompt
+     */
+    update_prompt(prompt) {
+        const ptr0 = passStringToWasm0(prompt, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.shell_update_prompt(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
      * @param {string} input
      */
     execute(input) {
@@ -236,9 +244,6 @@ function __wbg_get_imports() {
         }
         const ret = result;
         return ret;
-    };
-    imports.wbg.__wbg_log_2e3072a240fae063 = function(arg0, arg1) {
-        console.log(getStringFromWasm0(arg0, arg1));
     };
     imports.wbg.__wbg_new_no_args_cb138f77cf6151ee = function(arg0, arg1) {
         const ret = new Function(getStringFromWasm0(arg0, arg1));
