@@ -9,7 +9,7 @@ pub enum Command {
     Pwd,
     Whoami,
     Which,
-    // Cat,
+    Cat,
     // Touch,
     // Mkdir,
     // Echo,

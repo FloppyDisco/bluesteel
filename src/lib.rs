@@ -19,6 +19,7 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
             FileNode::new("cd", None, FileType::Executable(Command::Cd)),
             FileNode::new("whoami", None, FileType::Executable(Command::Whoami)),
             FileNode::new("which", None, FileType::Executable(Command::Which)),
+            FileNode::new("cat", None, FileType::Executable(Command::Cat)),
         ]),
     );
     let home = FileNode::new(
@@ -31,7 +32,12 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
                 "user",
                 None,
                 FileType::Directory(vec![
-                    FileNode::new(".test", None, FileType::File(vec![])),
+                    FileNode::new(".test", None, FileType::File(vec![
+                        "here is a file".to_string(),
+                        "it contains stuff".to_string(),
+                        "".to_string(),
+                        "it's contents are strings".to_string()
+                    ])),
                     FileNode::new("whoami2", None, FileType::Executable(Command::Whoami)),
                 ]),
             ),

@@ -86,6 +86,7 @@ impl Shell {
             Command::Pwd => self.pwd(args)?,
             Command::Whoami => self.whoami(args)?,
             Command::Which => self.which(args)?,
+            Command::Cat => self.cat(args)?,
         }
         Ok(())
     }
@@ -275,6 +276,30 @@ impl Shell {
                 }
             }
         }
+        Ok(())
+    }
+
+    fn cat(&self, args: Vec<&str>) -> Result<(), JsValue> {
+        for arg in args {
+            if let Some(node_ref) = self.filesystem.get_node_ref(&arg) {
+                match &node_ref.borrow().file_type {
+                    Executable(_) => {
+                        self.print_output(format!("cat: {}: is an executable", arg))?;
+                    }
+                    Directory(_) => {
+                        self.print_output(format!("cat: {}: is a directory", arg))?;
+                    }
+                    File(contents) => {
+                        for line in contents {
+                            self.print_output(line.to_string())?;
+                        }
+                    }
+                }
+            } else {
+                self.print_output(format!("cat: {}: no such file or directory", arg))?;
+            };
+        }
+
         Ok(())
     }
 }
