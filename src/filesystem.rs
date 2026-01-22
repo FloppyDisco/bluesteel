@@ -88,14 +88,52 @@ impl fmt::Display for FileNode {
 }
 
 pub struct FileSystem {
-    pub root: Rc<RefCell<FileNode>>,
-    pub home: Rc<RefCell<FileNode>>,
-    pub cwd: Rc<RefCell<FileNode>>,
-    pub previous: Rc<RefCell<FileNode>>,
+    root: Rc<RefCell<FileNode>>,
+    home: Rc<RefCell<FileNode>>,
+    cwd: Rc<RefCell<FileNode>>,
+    previous: Rc<RefCell<FileNode>>,
 }
 
 impl FileSystem {
-    pub fn get_node_ref(&self, path: &str) -> Option<Rc<RefCell<FileNode>>> {
+    pub(crate) fn new(
+        root: Rc<RefCell<FileNode>>,
+        home: Rc<RefCell<FileNode>>,
+        cwd: Rc<RefCell<FileNode>>,
+        previous: Rc<RefCell<FileNode>>,
+    ) -> Self {
+        Self {
+            root,
+            home,
+            cwd,
+            previous,
+        }
+    }
+
+    pub(crate) fn root(&self) -> Rc<RefCell<FileNode>> {
+        self.root.clone()
+    }
+
+    pub(crate) fn home(&self) -> Rc<RefCell<FileNode>> {
+        self.home.clone()
+    }
+
+    pub(crate) fn cwd(&self) -> Rc<RefCell<FileNode>> {
+        self.cwd.clone()
+    }
+
+    pub(crate) fn previous(&self) -> Rc<RefCell<FileNode>> {
+        self.previous.clone()
+    }
+
+    pub(crate) fn set_cwd(&mut self, cwd: Rc<RefCell<FileNode>>) {
+        self.cwd = cwd;
+    }
+
+    pub(crate) fn set_previous(&mut self, previous: Rc<RefCell<FileNode>>) {
+        self.previous = previous;
+    }
+
+    pub(crate) fn get_node_ref(&self, path: &str) -> Option<Rc<RefCell<FileNode>>> {
         if path == "" {
             return Some(self.cwd.clone());
         };

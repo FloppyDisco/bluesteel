@@ -8,56 +8,8 @@ use shell::Shell;
 
 use FileType::*;
 
-
 #[wasm_bindgen]
 pub fn boot_shell() -> Result<Shell, JsValue> {
-    // let bin = FileNodeType::Directory(HashMap::from([(
-    //     String::from("ls"),
-    //     FileNodeType::Executable(Command::Ls),
-    // )]));
-
-    // let local_home = FileNodeType::Directory(HashMap::from([
-    //     (
-    //         String::from("README.md"),
-    //         FileNodeType::File(vec![
-    //             String::from("There's 30 years of files in here!"),
-    //             String::from(""),
-    //             String::from("I hope you know what you're doing..."),
-    //         ]),
-    //     ),
-    //     (
-    //         String::from("schedule"),
-    //         FileNodeType::File(vec![
-    //             String::from("> Tea with Lapsang - 8:30am"),
-    //             String::from("> Relax at Daiye Spa - 10:00am"),
-    //             String::from("> Pick up Matilda - 6:30pm (Location: the Derek Zoolander Center)"),
-    //             String::from("> Prepare for Show - 9:27pm"),
-    //             String::from(
-    //                 "> Meet up with Billy Zane and kick HanSolo's ass! - 9:30pm (Location: Members Only)",
-    //             ),
-    //         ]),
-    //     ),
-    //     // (
-    //     //     String::from(".games"),
-    //     //     FileNodeType::Directory(HashMap::from([(
-    //     //         String::from("snake"),
-    //     //         FileNodeType::Executable(Command::Snake),
-    //     //     )])),
-    //     // ),
-    //     (
-    //         String::from("downloads"),
-    //         FileNodeType::Directory(HashMap::from([])),
-    //     ),
-    // ]));
-
-    // let local = FileSystem {
-    //     contents: FileNodeType::Directory(HashMap::from([
-    //         (String::from("bin"), bin),
-    //         (String::from("home"), local_home),
-    //     ])),
-    //     cwd: Path::new("/home/"),
-    // };
-
     let bin = FileNode::new(
         "bin",
         None,
@@ -79,12 +31,12 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
             ),
         ]),
     );
-    let local = FileSystem {
-        cwd: home.clone(),
-        home: home.clone(),
-        previous: home.clone(),
-        root: FileNode::new("", None, FileType::Directory(vec![home, bin])),
-    };
+    let local = FileSystem::new(
+        FileNode::new("", None, FileType::Directory(vec![home.clone(), bin])),
+        home.clone(),
+        home.clone(),
+        home.clone(),
+    );
 
     let window = web_sys::window().ok_or("window not found")?;
     let document = window.document().ok_or("document not found")?;
@@ -107,7 +59,7 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
         .get_element_by_id("command-line")
         .ok_or("command-line could not found")?;
 
-    let cwd_path = local.cwd.borrow().get_path();
+    let cwd_path = local.cwd().borrow().get_path();
 
     let shell = Shell::new(
         local,

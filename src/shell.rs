@@ -127,10 +127,10 @@ impl Shell {
     }
 
     fn cd(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
-        let cwd = self.filesystem.cwd.clone();
+        let cwd = self.filesystem.cwd();
 
         if args.is_empty() {
-            self.filesystem.cwd = self.filesystem.home.clone();
+            self.filesystem.set_cwd(self.filesystem.home());
         } else {
             if args.len() > 1 {
                 self.print_output(format!("cd: '{}': invalid argument", args.join(" ")))?;
@@ -139,12 +139,12 @@ impl Shell {
 
             if let Some(path) = args.get(0) {
                 if path == &"-" {
-                    self.filesystem.cwd = self.filesystem.previous.clone();
+                    self.filesystem.set_cwd(self.filesystem.previous());
                 } else {
                     if let Some(node_ref) = self.filesystem.get_node_ref(path) {
                         match &node_ref.borrow().file_type {
                             Directory(_) => {
-                                self.filesystem.cwd = node_ref.clone();
+                                self.filesystem.set_cwd(node_ref.clone());
                             }
                             _ => {
                                 self.print_output(format!("cd: {}: not a directory", path))?;
@@ -159,8 +159,8 @@ impl Shell {
             }
         };
 
-        self.filesystem.previous = cwd;
-        self.update_prompt(&format!("{}", self.filesystem.cwd.borrow().get_path()));
+        self.filesystem.set_previous(cwd);
+        self.update_prompt(&format!("{}", self.filesystem.cwd().borrow().get_path()));
         Ok(())
     }
 
@@ -192,7 +192,7 @@ impl Shell {
         // allow passing 'ls' or 'ls -aR'
         // there are args but no path provided
         if nodes_to_print.is_empty() && !received_path_arg {
-            nodes_to_print.push(self.filesystem.cwd.clone());
+            nodes_to_print.push(self.filesystem.cwd());
         }
 
         let display_headers = &nodes_to_print.len() > &1usize;
