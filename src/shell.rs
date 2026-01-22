@@ -93,6 +93,9 @@ impl Shell {
         match executable {
             Command::Ls => self.ls(args)?,
             Command::Cd => self.cd(args)?,
+            Command::Pwd => self.pwd(args)?,
+            Command::Whoami => self.whoami(args)?,
+            Command::Which => self.which(args)?,
         }
         Ok(())
     }
@@ -126,6 +129,37 @@ impl Shell {
         Ok(())
     }
 
+    fn pwd(&self, args: Vec<&str>) -> Result<(), JsValue> {
+        if !args.is_empty() {
+            self.print_output("pwd: too many arguments".to_string())?;
+            return Ok(());
+        }
+        let cwd = self.filesystem.cwd();
+        self.print_output(format!("{}", cwd.borrow().get_path()))?;
+        Ok(())
+    }
+
+    fn whoami(&self, args: Vec<&str>) -> Result<(), JsValue> {
+        if !args.is_empty() {
+            self.print_output("usage: whoami".to_string())?;
+            return Ok(());
+        }
+        self.print_output("zoolander99".to_string())?;
+        Ok(())
+    }
+    
+    fn which(&self, args: Vec<&str>) -> Result<(), JsValue> {
+        // for each arg
+        // find the location of a command in the file system
+        // relative path
+        // either in the current directory or in /bin
+        // absolute path
+        // only at the given path
+        // this logic will probably need to be abstracted from the argument parsing
+        
+        Ok(())
+    }
+    
     fn cd(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
         let cwd = self.filesystem.cwd();
 

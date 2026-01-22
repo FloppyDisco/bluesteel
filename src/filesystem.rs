@@ -6,10 +6,10 @@ use std::rc::Rc;
 pub enum Command {
     Ls,
     Cd,
-    // Pwd,
+    Pwd,
+    Whoami,
+    Which,
     // Cat,
-    // Which,
-    // Whoami,
     // Touch,
     // Mkdir,
     // Echo,

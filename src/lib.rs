@@ -14,8 +14,11 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
         "bin",
         None,
         FileType::Directory(vec![
+            FileNode::new("pwd", None, FileType::Executable(Command::Pwd)),
             FileNode::new("ls", None, FileType::Executable(Command::Ls)),
             FileNode::new("cd", None, FileType::Executable(Command::Cd)),
+            FileNode::new("whoami", None, FileType::Executable(Command::Whoami)),
+            FileNode::new("which", None, FileType::Executable(Command::Which)),
         ]),
     );
     let home = FileNode::new(
