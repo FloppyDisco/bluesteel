@@ -26,33 +26,40 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
             FileNode::new("echo", None, FileType::Executable(Command::Echo)),
         ]),
     );
+    let volume = FileNode::new(
+        "zip_disc",
+        None,
+        FileType::Directory(vec![
+            FileNode::new(
+                "README.md",
+                None,
+                FileType::File(vec![
+                    "I can't figure out how to get this to work".to_string(),
+                    "Maury said to move it from the zip disc or something".to_string(),
+                ]),
+            ),
+            FileNode::new("ssh", None, FileType::Executable(Command::Whoami)),
+        ]),
+    );
     let home = FileNode::new(
         "home",
         None,
         FileType::Directory(vec![
-            FileNode::new(".hidden", None, File(Vec::new())),
-            FileNode::new("not_hidden", None, File(Vec::new())),
-            FileNode::new(
-                "user",
-                None,
-                FileType::Directory(vec![
-                    FileNode::new(
-                        ".test",
-                        None,
-                        FileType::File(vec![
-                            "here is a file".to_string(),
-                            "it contains stuff".to_string(),
-                            "".to_string(),
-                            "it's contents are strings".to_string(),
-                        ]),
-                    ),
-                    FileNode::new("whoami2", None, FileType::Executable(Command::Whoami)),
-                ]),
-            ),
+            FileNode::new("README.md", None, File(Vec::new())),
+            FileNode::new(".games", None, FileType::Directory(vec![])),
         ]),
     );
     let local = FileSystem::new(
-        FileNode::new("", None, FileType::Directory(vec![home.clone(), bin])),
+        FileNode::new(
+            "",
+            None,
+            FileType::Directory(vec![
+                home.clone(),
+                bin,
+                FileNode::new(".npm", Some(volume.clone()), FileType::Directory(vec![])),
+                FileNode::new(".ssh", None, FileType::Directory(vec![])),
+            ]),
+        ),
         home.clone(),
         home.clone(),
         home.clone(),

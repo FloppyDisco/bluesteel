@@ -13,6 +13,8 @@ pub enum Command {
     Cat,
     Touch,
     Mkdir,
+    // Cp,
+    // Mv,
     Rm,
     Echo,
 }
