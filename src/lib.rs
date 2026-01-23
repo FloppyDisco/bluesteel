@@ -45,7 +45,22 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
         "home",
         None,
         FileType::Directory(vec![
-            FileNode::new("README.md", None, File(Vec::new())),
+            FileNode::new(
+                "README.md",
+                None,
+                File(vec![
+                    "There's 30 years of files in here,".to_string(),
+                    "I hope you know what you're doing!".to_string(),
+                ]),
+            ),
+            FileNode::new(
+                "schedule",
+                None,
+                File(vec![
+                    "daiye spa until - 4pm".to_string(),
+                    "pick up Matilda and little Derek - 530pm".to_string(),
+                ]),
+            ),
             FileNode::new(".games", None, FileType::Directory(vec![])),
         ]),
     );
@@ -57,7 +72,23 @@ pub fn boot_shell() -> Result<Shell, JsValue> {
                 home.clone(),
                 bin,
                 FileNode::new(".npm", Some(volume.clone()), FileType::Directory(vec![])),
-                FileNode::new(".ssh", None, FileType::Directory(vec![])),
+                FileNode::new(".ssh", None, FileType::Directory(vec![
+                    FileNode::new("config", None, File(vec![
+                        "Host company-server".to_string(),
+                        "  HostName 168.68.6.86".to_string(),
+                        "  User bluesteel".to_string(),
+                        "  IdentityFile /.ssh/id_rsa".to_string(),
+                    ])),
+                    FileNode::new("id_rsa", None, File(vec![
+                        "-----BEGIN RSA PRIVATE KEY-----".to_string(),
+                        // encode something in the private key stuff
+                        "MIIEowIBAAKCAQEA...".to_string(),
+                        "-----END RSA PRIVATE KEY-----".to_string(),
+                    ])),
+                    FileNode::new("id_rsa.pub", None, File(vec![
+                        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACA... drock@bluesteel.software".to_string(),
+                    ])),
+                ])),
             ]),
         ),
         home.clone(),
