@@ -14,7 +14,7 @@ pub enum Command {
     Touch,
     Mkdir,
     Rm,
-    // Echo,
+    Echo,
 }
 
 #[derive(Clone)]

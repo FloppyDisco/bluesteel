@@ -20,7 +20,6 @@ use FileType::*;
 //     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 // }
 
-
 #[wasm_bindgen]
 pub struct Shell {
     filesystem: FileSystem,
@@ -62,8 +61,6 @@ impl Shell {
 impl Shell {
     pub fn execute(&mut self, input: &str) -> Result<(), JsValue> {
         self.print_command(input)?;
-        
-
 
         // because input is gauranteed to be at least an empty string
         // calling .split().remove(0) cannot fail because there will always be atleast one item
@@ -105,6 +102,7 @@ impl Shell {
             Command::Touch => self.touch(args)?,
             Command::Mkdir => self.mkdir(args)?,
             Command::Rm => self.rm(args)?,
+            Command::Echo => self.echo(args)?,
         }
         Ok(())
     }
@@ -331,9 +329,10 @@ impl Shell {
                 match &node.file_type {
                     Directory(children) => {
                         if !children.iter().any(|child| child.borrow().name == filename) {
-                            let new_file = FileNode::new(filename, Some(node_ref.clone()), File(vec![]));
+                            let new_file =
+                                FileNode::new(filename, Some(node_ref.clone()), File(vec![]));
                             // we must manually drop the borrow() of node_ref
-                            // so that we do not have a mut borrow (inside add_node) 
+                            // so that we do not have a mut borrow (inside add_node)
                             // and a immutable borrow at the same time
                             drop(node);
                             self.filesystem.add_node(node_ref.clone(), new_file)?;
@@ -347,13 +346,16 @@ impl Shell {
                     }
                 };
             } else {
-                self.print_output(format!("touch: {}: no such file or directory", path_components.join("/")))?;
+                self.print_output(format!(
+                    "touch: {}: no such file or directory",
+                    path_components.join("/")
+                ))?;
             };
         }
 
         Ok(())
     }
-    
+
     fn mkdir(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
         for arg in args {
             let mut path_components: Vec<&str> = arg.split('/').collect();
@@ -364,9 +366,10 @@ impl Shell {
                 match &node.file_type {
                     Directory(children) => {
                         if !children.iter().any(|child| child.borrow().name == dirname) {
-                            let new_dir = FileNode::new(dirname, Some(node_ref.clone()), Directory(vec![]));
+                            let new_dir =
+                                FileNode::new(dirname, Some(node_ref.clone()), Directory(vec![]));
                             // we must manually drop the borrow() of node_ref
-                            // so that we do not have a mut borrow (inside add_node) 
+                            // so that we do not have a mut borrow (inside add_node)
                             // and a immutable borrow at the same time
                             drop(node);
                             self.filesystem.add_node(node_ref.clone(), new_dir)?;
@@ -380,13 +383,16 @@ impl Shell {
                     }
                 };
             } else {
-                self.print_output(format!("mkdir: {}: no such file or directory", path_components.join("/")))?;
+                self.print_output(format!(
+                    "mkdir: {}: no such file or directory",
+                    path_components.join("/")
+                ))?;
             };
         }
 
         Ok(())
     }
-    
+
     fn rm(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
         let mut recursive = false;
         let mut targets: Vec<&str> = Vec::new();
@@ -412,10 +418,7 @@ impl Shell {
                 }
                 nodes_to_delete.push(node_ref);
             } else {
-                self.print_output(format!(
-                    "rm: {}: no such file or directory",
-                    target
-                ))?;
+                self.print_output(format!("rm: {}: no such file or directory", target))?;
             };
         }
 
@@ -424,5 +427,97 @@ impl Shell {
         }
 
         Ok(())
+    }
+
+    fn echo(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
+        let mut strings: Vec<String> = vec![];
+        let mut iter = args.into_iter();
+
+        // echo actually supports passing multiple targets by using '>' more than once
+        // we will need to change target to a vec and pass paths
+        // we should also store the preppend / append data in a struct for these
+        let mut target: Option<&str> = None;
+        let mut append = false;
+        while let Some(arg) = iter.next() {
+            match arg {
+                // passing the redirect arg is supported in any position not just at the end
+                ">" | ">>" => {
+                    if arg == ">>" {
+                        append = true;
+                    }
+                    if let Some(path) = iter.next() {
+                        target = Some(path)
+                    } else {
+                        self.print_output(format!("echo: parse error near '{}'", arg))?;
+                    }
+                }
+                _ => {
+                    strings.push(arg.to_string());
+                }
+            }
+        }
+
+        let new_contents: Vec<String> =
+            strings.join(" ").split("\\n").map(str::to_string).collect();
+
+        let Some(path) = target else {
+            for line in new_contents {
+                self.print_output(format!("{}", line))?;
+            }
+            return Ok(());
+        };
+
+        let Some(node_ref) = self.filesystem.get_node_ref(path) else {
+            let mut path_components: Vec<&str> = path.split('/').collect();
+            let filename = path_components.pop().unwrap();
+
+            let Some(parent_ref) = self.filesystem.get_node_ref(&path_components.join("/")) else {
+                self.print_output(format!(
+                    "echo: {}: no such file or directory",
+                    path_components.join("/")
+                ))?;
+                return Ok(());
+            };
+
+            let node = parent_ref.borrow();
+            match &node.file_type {
+                File(_) | Executable(_) => {
+                    self.print_output(format!("echo: {}: is not a directory", node.get_path()))?;
+                }
+                Directory(_) => {
+                    // we must manually drop the borrow() of node_ref
+                    // so that we do not have a mut borrow (inside add_node)
+                    // and a immutable borrow at the same time
+                    drop(node);
+
+                    // we have already checked for the existence of the node
+                    // so we can assume that a node with this name does not exist
+                    // in this directory and we can just add the new node
+                    let new_file =
+                        FileNode::new(filename, Some(parent_ref.clone()), File(new_contents));
+                    self.filesystem.add_node(parent_ref.clone(), new_file)?;
+                }
+            };
+            return Ok(());
+        };
+
+        let node = &mut node_ref.borrow_mut();
+
+        match &mut node.file_type {
+            Directory(_) => {
+                self.print_output(format!("echo: {}: is a directory", node.get_path()))?;
+            }
+            Executable(_) => {
+                self.print_output(format!("echo: {}: permission denied", node.get_path()))?;
+            }
+            File(contents) => {
+                if append {
+                    contents.extend(new_contents);
+                } else {
+                    *contents = new_contents;
+                }
+            }
+        }
+        return Ok(());
     }
 }
