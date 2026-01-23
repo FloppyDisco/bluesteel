@@ -104,6 +104,7 @@ impl Shell {
             Command::Cat => self.cat(args)?,
             Command::Touch => self.touch(args)?,
             Command::Mkdir => self.mkdir(args)?,
+            Command::Rm => self.rm(args)?,
         }
         Ok(())
     }
@@ -381,6 +382,45 @@ impl Shell {
             } else {
                 self.print_output(format!("mkdir: {}: no such file or directory", path_components.join("/")))?;
             };
+        }
+
+        Ok(())
+    }
+    
+    fn rm(&mut self, args: Vec<&str>) -> Result<(), JsValue> {
+        let mut recursive = false;
+        let mut targets: Vec<&str> = Vec::new();
+
+        for arg in args {
+            match arg {
+                "-r" | "-R" | "--recursive" => recursive = true,
+                _ => targets.push(arg),
+            }
+        }
+
+        let mut nodes_to_delete: Vec<Rc<RefCell<FileNode>>> = Vec::new();
+
+        for target in targets {
+            if let Some(node_ref) = self.filesystem.get_node_ref(&target) {
+                let is_dir = matches!(node_ref.borrow().file_type, Directory(_));
+                if is_dir && !recursive {
+                    self.print_output(format!(
+                        "rm: {}: is a directory",
+                        node_ref.borrow().get_path()
+                    ))?;
+                    continue;
+                }
+                nodes_to_delete.push(node_ref);
+            } else {
+                self.print_output(format!(
+                    "rm: {}: no such file or directory",
+                    target
+                ))?;
+            };
+        }
+
+        for node_ref in nodes_to_delete {
+            self.filesystem.remove_node(node_ref)?;
         }
 
         Ok(())

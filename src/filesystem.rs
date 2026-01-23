@@ -13,8 +13,8 @@ pub enum Command {
     Cat,
     Touch,
     Mkdir,
+    Rm,
     // Echo,
-    // Rm,
 }
 
 #[derive(Clone)]
@@ -203,11 +203,38 @@ impl FileSystem {
                     Err(JsValue::from_str("Node already exists"))
                 } else {
                     child_nodes.push(node_ref);
+                    child_nodes.sort_by(|a, b| a.borrow().name.cmp(&b.borrow().name));
                     Ok(())
                 }
             }
             FileType::File(_) | FileType::Executable(_) => {
                 Err(JsValue::from_str("Cannot add node to a file or executable"))
+            }
+        }
+    }
+
+    pub(crate) fn remove_node(&mut self, node_ref: Rc<RefCell<FileNode>>) -> Result<(), JsValue> {
+        let node = node_ref.borrow_mut();
+        let Some(parent_ref) = node.parent.clone() else {
+            return Err(JsValue::from_str("Node does not have a parent"));
+        };
+
+        match &mut parent_ref.borrow_mut().file_type {
+            FileType::File(_) | FileType::Executable(_) => {
+                return Err(JsValue::from_str(
+                    "Cannot remove node from a file or executable",
+                ));
+            }
+            FileType::Directory(children) => {
+                if let Some(index) = children
+                    .iter()
+                    .position(|child_ref| Rc::ptr_eq(child_ref, &node_ref))
+                {
+                    children.remove(index);
+                    return Ok(());
+                } else {
+                    return Err(JsValue::from_str("Node not found"));
+                };
             }
         }
     }
