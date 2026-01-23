@@ -46,7 +46,14 @@ impl FileNode {
 
         if let FileType::Directory(children) = &node_ref.borrow().file_type {
             for child in children {
-                child.borrow_mut().parent = Some(node_ref.clone());
+                let mut node = child.borrow_mut();
+                
+                match &node.parent {
+                    Some(_) => (),
+                    None => {
+                        node.parent = Some(node_ref.clone());
+                    }
+                }
             }
         };
 
